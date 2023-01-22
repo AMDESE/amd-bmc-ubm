@@ -1,0 +1,15 @@
+[Unit]
+Description=AMD Lenovo Backplane Configuration application
+Before=xyz.openbmc_project.Chassis.Control.Power.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=no
+ExecStart=/usr/bin/amd-bmc-ubm
+SyslogIdentifier=amd-ras
+Type=dbus
+BusName=com.amd.ubm
+
+[Install]
+WantedBy=multi-user.target
+
