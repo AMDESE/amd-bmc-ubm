@@ -18,10 +18,11 @@ extern "C"
 #include <fcntl.h>
 }
 
-#define COMMAND_BOARD_ID      ("/sbin/fw_printenv -n board_id")
-#define COMMAND_BOARD_ID_LEN  (3)
-#define COMMAND_POR_RST       ("/sbin/fw_printenv -n por_rst")
-#define COMMAND_POR_RST_LEN   (5)
+#define COMMAND_BOARD_ID         ("/sbin/fw_printenv -n board_id")
+#define COMMAND_BOARD_ID_LEN     (3)
+#define COMMAND_POR_RST          ("/sbin/fw_printenv -n por_rst")
+#define COMMAND_POR_RST_LEN      (5)
+#define COMMAND_POR_RST_RSP_LEN  (4)
 
 #define BP_CONF_FILE          ("/var/lib/misc/ubm.conf")
 #define BP_CONF_END           (0xFF)
@@ -80,7 +81,7 @@ int bp_open_dev(void)
             return FAILURE;
         }
 
-        if (set_i2c_mux(BP_MUX0_ADDR, mux_port[3]) < SUCCESS) {
+        if (set_i2c_mux(BP_MUX0_ADDR, mux_port[BP_MUX0_PORT]) < SUCCESS) {
             sd_journal_print(LOG_ERR, "Error: setting Mux %s addr %x \n", i2c_devname, BP_MUX0_ADDR);
             return FAILURE;
         }
@@ -193,7 +194,7 @@ int main(int argc, char **argv)
             sd_journal_print(LOG_INFO, "POR RST: %s\n", data);
     }
     pclose(pf);
-    if (strncmp(data, "true", 4) != 0)
+    if (strncmp(data, "true", COMMAND_POR_RST_RSP_LEN) != 0)
         return 0; //Not a Power On Reset
 
     // Look for Lenovo systems
