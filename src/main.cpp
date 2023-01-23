@@ -103,9 +103,36 @@ int bp_close_dev(void)
     return SUCCESS;
 }
 
+void psoc_set_reg(int reg_cnt)
+{
+    int k;
+    if(reg_cnt == 0) {
+        // No conf file, disable PSOC
+        if (set_i2c(PSOC_CTL_ADDR, CTL_REG_CFG_DISABLE, BP_CFG_DISABLE) < SUCCESS) {
+            sd_journal_print(LOG_ERR, "Error: setting PSOC Reg 0x%x \n", CTL_REG_CFG_DISABLE);
+            return;
+        }
+    }
+    else {
+        // set BP PSOC registers
+        for(k = 0; k < reg_cnt; k++)  {
+            if (set_i2c(PSOC_CTL_ADDR, bp_reg_offset[k], bp_reg_data[k]) < SUCCESS) {
+                sd_journal_print(LOG_ERR, "Error: setting PSOC Reg 0x%x \n", bp_reg_offset[k]);
+                return;
+            }
+        }
+
+        // done with BP config
+        if (set_i2c(PSOC_CTL_ADDR, CTL_REG_CFG_ENABLE, BP_CFG_ENABLE) < SUCCESS) {
+            sd_journal_print(LOG_ERR, "Error: setting i2c Addr 0x%x , Reg 0x%x \n", PSOC_CTL_ADDR, CTL_REG_CFG_ENABLE);
+            return;
+        }
+    }
+}
+
 void bp_config(int reg_cnt)
 {
-    int i, j, k;
+    int i;
 
     for (i = 0; i < BP_MUX1_MAX_PORT; i++)
     {
@@ -114,35 +141,20 @@ void bp_config(int reg_cnt)
             sd_journal_print(LOG_ERR, "Error: setting Mux1 %x \n",BP_MUX1_ADDR);
             return;
         }
-        for (j = 0; j < BP_MUX2_MAX_PORT; j++) {
-            // Enable BP Bus in Mux 2
-            if (set_i2c_mux(BP_MUX2_ADDR, mux_port[j]) < SUCCESS) {
-                sd_journal_print(LOG_ERR, "Error: setting Mux2 %x \n",BP_MUX2_ADDR);
-                return;
-            }
-            if(reg_cnt == 0) {
-                if (set_i2c(PSOC_CTL_ADDR, CTL_REG_CFG_DISABLE, BP_CFG_DISABLE) < SUCCESS) {
-                    sd_journal_print(LOG_ERR, "Error: setting PSOC Reg 0x%x \n", CTL_REG_CFG_DISABLE);
-                    return;
-                }
-                sd_journal_print(LOG_INFO, "Disabled BP for Port %d %d \n", i, j);
-            }
-            else {
-                for(k = 0; k < reg_cnt; k++)  {
-                    if (set_i2c(PSOC_CTL_ADDR, bp_reg_offset[k], bp_reg_data[k]) < SUCCESS) {
-                        sd_journal_print(LOG_ERR, "Error: setting PSOC Reg 0x%x \n", bp_reg_offset[k]);
-                        return;
-                    }
-                }
-
-                // done with BP config
-                if (set_i2c(PSOC_CTL_ADDR, CTL_REG_CFG_ENABLE, BP_CFG_ENABLE) < SUCCESS) {
-                    sd_journal_print(LOG_ERR, "Error: setting i2c Addr 0x%x , Reg 0x%x \n", PSOC_CTL_ADDR, CTL_REG_CFG_ENABLE);
-                    return;
-                }
-                sd_journal_print(LOG_INFO, "Configured BP on Port %d %d \n", i, j);
-            }
+        // Enable BP Bus in Mux 2, Port 0
+        sd_journal_print(LOG_INFO, "Configure BP on Port %d %d \n", i, BP_MUX2_PORT_0);
+        if (set_i2c_mux(BP_MUX2_ADDR, mux_port[BP_MUX2_PORT_0]) < SUCCESS) {
+            sd_journal_print(LOG_ERR, "Error: setting Mux2 %x \n",BP_MUX2_ADDR);
+            return;
         }
+        psoc_set_reg(reg_cnt);
+        // Enable BP Bus in Mux 2, Port 1
+        sd_journal_print(LOG_INFO, "Configure BP on Port %d %d \n", i, BP_MUX2_PORT_1);
+        if (set_i2c_mux(BP_MUX2_ADDR, mux_port[BP_MUX2_PORT_1]) < SUCCESS) {
+            sd_journal_print(LOG_ERR, "Error: setting Mux2 %x \n",BP_MUX2_ADDR);
+            return;
+        }
+        psoc_set_reg(reg_cnt);
     }
 
     return;
