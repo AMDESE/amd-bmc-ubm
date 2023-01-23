@@ -158,15 +158,26 @@ int bp_read_conf()
     bp_file.open(BP_CONF_FILE);
     if ( bp_file.is_open() ) {
         while ( bp_file ) {
+            //Read Register offset
             bp_file >> std::hex >> reg;
-            bp_file >> std::hex >> data;
-            if (reg == BP_CONF_END) // end of config file
+            if ((reg < CTL_REG_CFG_VAL) ||
+                (reg >= CTL_MAX_REG)) {
+                if (reg != BP_CONF_END) // check end of config file
+                    sd_journal_print(LOG_ERR, "Error: Reading %s in line %d for Register Value \n", BP_CONF_FILE, ret+1);
                 break;
+            }
+            //Read Data
+            bp_file >> std::hex >> data;
+            if ((data == NULL) ||
+                (data > BP_CFG_DISABLE)) {
+                sd_journal_print(LOG_ERR, "Error: Reading %s in line %d for Data Value \n", BP_CONF_FILE, ret+1);
+                break;
+            }
+
             bp_reg_offset[ret]=reg;
             bp_reg_data[ret]=data;
             ret++;;
             sd_journal_print(LOG_INFO, " %s(%d): Reg 0x%x , Data 0x%x \n", BP_CONF_FILE, ret, reg, data);
-            ret++;
             if(ret >= CTL_MAX_REG) {
                 ret = CTL_MAX_REG;
                 break;
