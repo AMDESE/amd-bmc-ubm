@@ -23,7 +23,8 @@
 #define MUX_ENABLE_PORT2  (0x04)
 #define MUX_ENABLE_PORT3  (0x08)
 #define BP_MUX0_PORT      (3)
-
+#define BP_MUX2_PORT_0    (0)
+#define BP_MUX2_PORT_1    (1)
 
 //BP PSOC Control Reg
 #define CTL_MAX_REG              (0x20)
