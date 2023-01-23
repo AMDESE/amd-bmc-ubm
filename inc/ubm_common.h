@@ -22,6 +22,7 @@
 #define MUX_ENABLE_PORT1  (0x02)
 #define MUX_ENABLE_PORT2  (0x04)
 #define MUX_ENABLE_PORT3  (0x08)
+#define BP_MUX0_PORT      (3)
 
 
 //BP PSOC Control Reg
