@@ -629,10 +629,10 @@ int main(int argc, char **argv)
     }
     if(pf)
         pclose(pf);
-#if 0
+
     if (strncmp(data, "true", COMMAND_POR_RST_RSP_LEN) != 0)
         return 0; //Not a Power On Reset
-#endif
+
     // Look for Lenovo systems
     pf = popen(COMMAND_BOARD_ID,"r");
     if(pf)
