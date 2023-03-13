@@ -16,8 +16,8 @@
 
 //BP Mux
 #define MUX_REG           (0x00)
-#define BP_MUX1_MAX_PORT  (3)
-#define BP_MUX2_MAX_PORT  (2)
+#define BP_MAX_PORT       (6)
+#define BP_PSOC_I2C_BUS   (255)
 #define MUX_ENABLE_PORT0  (0x01)
 #define MUX_ENABLE_PORT1  (0x02)
 #define MUX_ENABLE_PORT2  (0x04)
@@ -110,9 +110,9 @@
 #define BP_SLAVE_ADDR_SEP_CONTROL_REG                           	0x60            /* 8-bit address: 0xC0 */
 
 //BP FRU
-#define SYS_EEPROM_PATH_LENGTH										64
-#define BP_FRU_BOARD_PRODUCT_OFFSET                            		0x16
-#define BP_FRU_BOARD_PRODUCT_SIZE                              		40
+#define SYS_EEPROM_PATH_LENGTH						64
+#define BP_FRU_BOARD_PRODUCT_OFFSET					0x16
+#define BP_FRU_BOARD_PRODUCT_SIZE					40
 
 
 #define BP_SYSTEM_TYPE_INTEL_GP                                 	0x00
@@ -129,6 +129,13 @@
 #define BP1_FRU_PATH "/sys/bus/i2c/devices/250-0050/eeprom"
 #define BP2_FRU_PATH "/sys/bus/i2c/devices/251-0050/eeprom"
 #define BP3_FRU_PATH "/sys/bus/i2c/devices/252-0050/eeprom"
+#define HPM_FRU_PATH "/sys/bus/i2c/devices/7-0050/eeprom"
+
+#define HPM_FRU_INTERNAL_OFFSET (8)
+#define HPM_FRU_INTERNAL_SIZE   (24)
+#define BOARD_ID_OFFSET         (8)
+#define BOARD_REV_OFFSET        (16)
+#define BOARD_REV_EVT1          (0x30)
 
 
 

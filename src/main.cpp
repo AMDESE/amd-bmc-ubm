@@ -23,8 +23,6 @@ extern "C"
 
 #define BP_DEBUG                1
 
-#define COMMAND_BOARD_ID         ("/sbin/fw_printenv -n board_id")
-#define COMMAND_BOARD_ID_LEN     (3)
 #define COMMAND_POR_RST          ("/sbin/fw_printenv -n por_rst")
 #define COMMAND_POR_RST_LEN      (5)
 #define COMMAND_POR_RST_RSP_LEN  (4)
@@ -40,16 +38,15 @@ constexpr auto VOLCANO   = 107;  //0x6B
 constexpr auto VOLCANO_1 = 116;  //0x74
 constexpr auto VOLCANO_2 = 117;  //0x75
 
-static int fd = FAILURE;
 static int mux_port[4]={MUX_ENABLE_PORT0, MUX_ENABLE_PORT1, MUX_ENABLE_PORT2, MUX_ENABLE_PORT3};
 static int bp_reg_offset[CTL_MAX_REG];
 static int bp_reg_data[CTL_MAX_REG];
 
 const BP_Info BP_Table_List[] =
 {
-		/* BP Name in FRU,					BP ID (BP Type Code), 			BP Total SEP,		BP Total Bay        BP Type, 				BP Group ID         HFC */
-		{"None",                            BP_ID_NONE, 		            BP_TOTAL_SEP_0, 	BP_TOTAL_BAY_8, 	BP_TYPE_ANYBAY, 		BP_Group_ID_4,      {0, 0}        },
-		{"2U 2.5\" Anybay 8-Bay BP",        BP_ID_2U_2_5_Anybay_8_Bay, 		BP_TOTAL_SEP_2, 	BP_TOTAL_BAY_8, 	BP_TYPE_ANYBAY, 		BP_Group_ID_4,      {0, 5}        },
+    /* BP Name in FRU,           BP ID (BP Type Code),      BP Total SEP,   BP Total Bay,   BP Type,        BP Group ID,   HFC */
+    {"None",                     BP_ID_NONE,                BP_TOTAL_SEP_0, BP_TOTAL_BAY_8, BP_TYPE_ANYBAY, BP_Group_ID_4, {0, 0}},
+    {"2U 2.5\" Anybay 8-Bay BP", BP_ID_2U_2_5_Anybay_8_Bay, BP_TOTAL_SEP_2, BP_TOTAL_BAY_8, BP_TYPE_ANYBAY, BP_Group_ID_4, {0, 5}},
 };
 const int BP_Table_List_Count = (sizeof(BP_Table_List) / sizeof(BP_Table_List[0]));
 
@@ -57,7 +54,7 @@ const int BP_Table_List_Count = (sizeof(BP_Table_List) / sizeof(BP_Table_List[0]
 /*
  * Initialization step, where Opening the i2c device file.
  */
-int set_i2c_mux(int addr, int data)
+int set_i2c_mux(int fd, int addr, int data)
 {
     if (ioctl(fd, I2C_SLAVE, addr) < SUCCESS) {
         sd_journal_print(LOG_ERR, "Error: ioctl for Mux %x \n", addr);
@@ -70,7 +67,7 @@ int set_i2c_mux(int addr, int data)
     return SUCCESS;
 }
 
-int set_i2c(int addr, int reg, int data)
+int set_i2c(int fd, int addr, int reg, int data)
 {
     if (ioctl(fd, I2C_SLAVE, addr) < SUCCESS) {
         sd_journal_print(LOG_ERR, "Error: ioctl for i2c addr %x \n", addr);
@@ -83,47 +80,36 @@ int set_i2c(int addr, int reg, int data)
     return SUCCESS;
 }
 
-int bp_open_dev(void)
+int bp_open_dev(int i2cBus)
 {
-
+    int  fd=FAILURE;
     char i2c_devname[FILEPATHSIZE];
 
-    snprintf(i2c_devname, FILEPATHSIZE, "/dev/i2c-%d", BP_I2C_BUS);
+    snprintf(i2c_devname, FILEPATHSIZE, "/dev/i2c-%d", i2cBus);
+    fd = open(i2c_devname, O_RDWR);
     if (fd < SUCCESS) {
-        fd = open(i2c_devname, O_RDWR);
-        if (fd < SUCCESS) {
-            sd_journal_print(LOG_ERR, "Error: Failed to open i2c device %s\n", i2c_devname);
-            return FAILURE;
-        }
-
-        if (set_i2c_mux(BP_MUX0_ADDR, mux_port[BP_MUX0_PORT]) < SUCCESS) {
-            sd_journal_print(LOG_ERR, "Error: setting Mux %s addr %x \n", i2c_devname, BP_MUX0_ADDR);
-            return FAILURE;
-        }
-    }
-    else {
-        sd_journal_print(LOG_ERR, "Error: device %s is already open \n", i2c_devname);
+        sd_journal_print(LOG_ERR, "Error: Failed to open i2c device %s\n", i2c_devname);
+        return FAILURE;
     }
 
-    return SUCCESS;
+    return fd;
 }
 
-int bp_close_dev(void)
+int bp_close_dev(int fd)
 {
     if (fd >= 0) {
         close(fd);
     }
 
-    fd = FAILURE;
     return SUCCESS;
 }
 
-void psoc_set_reg(int reg_cnt)
+void psoc_set_reg(int fd, int reg_cnt)
 {
     int k;
     if(reg_cnt == 0) {
         // No conf file, disable PSOC
-        if (set_i2c(PSOC_CTL_ADDR, CTL_REG_CFG_DISABLE, BP_CFG_DISABLE) < SUCCESS) {
+        if (set_i2c(fd, PSOC_CTL_ADDR, CTL_REG_CFG_DISABLE, BP_CFG_DISABLE) < SUCCESS) {
             sd_journal_print(LOG_ERR, "Error: setting PSOC Reg 0x%x \n", CTL_REG_CFG_DISABLE);
             return;
         }
@@ -131,14 +117,14 @@ void psoc_set_reg(int reg_cnt)
     else {
         // set BP PSOC registers
         for(k = 0; k < reg_cnt; k++)  {
-            if (set_i2c(PSOC_CTL_ADDR, bp_reg_offset[k], bp_reg_data[k]) < SUCCESS) {
+            if (set_i2c(fd, PSOC_CTL_ADDR, bp_reg_offset[k], bp_reg_data[k]) < SUCCESS) {
                 sd_journal_print(LOG_ERR, "Error: setting PSOC Reg 0x%x \n", bp_reg_offset[k]);
                 return;
             }
         }
 
         // done with BP config
-        if (set_i2c(PSOC_CTL_ADDR, CTL_REG_CFG_ENABLE, BP_CFG_ENABLE) < SUCCESS) {
+        if (set_i2c(fd, PSOC_CTL_ADDR, CTL_REG_CFG_ENABLE, BP_CFG_ENABLE) < SUCCESS) {
             sd_journal_print(LOG_ERR, "Error: setting i2c Addr 0x%x , Reg 0x%x \n", PSOC_CTL_ADDR, CTL_REG_CFG_ENABLE);
             return;
         }
@@ -148,28 +134,17 @@ void psoc_set_reg(int reg_cnt)
 void bp_config(int reg_cnt)
 {
     int i;
+    int fd = FAILURE;
 
-    for (i = 0; i < BP_MUX1_MAX_PORT; i++)
+    for (i = 0; i < BP_MAX_PORT; i++)
     {
-        // Enable BP Bus in Mux 1
-        if (set_i2c_mux(BP_MUX1_ADDR, mux_port[i]) < SUCCESS) {
-            sd_journal_print(LOG_ERR, "Error: setting Mux1 %x \n",BP_MUX1_ADDR);
-            return;
-        }
-        // Enable BP Bus in Mux 2, Port 0
-        sd_journal_print(LOG_INFO, "Configure BP on Port %d %d \n", i, BP_MUX2_PORT_0);
-        if (set_i2c_mux(BP_MUX2_ADDR, mux_port[BP_MUX2_PORT_0]) < SUCCESS) {
-            sd_journal_print(LOG_ERR, "Error: setting Mux2 %x \n",BP_MUX2_ADDR);
-            return;
-        }
-        psoc_set_reg(reg_cnt);
-        // Enable BP Bus in Mux 2, Port 1
-        sd_journal_print(LOG_INFO, "Configure BP on Port %d %d \n", i, BP_MUX2_PORT_1);
-        if (set_i2c_mux(BP_MUX2_ADDR, mux_port[BP_MUX2_PORT_1]) < SUCCESS) {
-            sd_journal_print(LOG_ERR, "Error: setting Mux2 %x \n",BP_MUX2_ADDR);
-            return;
-        }
-        psoc_set_reg(reg_cnt);
+        // Open I2C Bus
+        fd = bp_open_dev(BP_PSOC_I2C_BUS+i);
+        if(fd != FAILURE) {
+            psoc_set_reg(fd, reg_cnt);
+            sd_journal_print(LOG_INFO, "Configure PSOC on Bus %d Port %d \n", BP_PSOC_I2C_BUS+i, i);
+	}
+	bp_close_dev(fd);
     }
 
     return;
@@ -224,12 +199,12 @@ int bp_read_conf()
  */
 int Check_BP_Auto_Configuration_Register(char* bus_name, uint8_t which_bp, uint8_t which_sep, uint8_t offset, uint8_t value)
 {
-	static bool Is_Auto_Config_Value_Updated[BP_TOTAL_CONNECTOR][BP_TOTAL_SEP_3] = {{0}};
-	size_t write_count   = 1;
-	size_t read_count    = 1;
-	uint8_t  write_data[2] = {0};
-	uint8_t  read_data[2]  = {0};
-	int    ret           = -1;
+    static bool Is_Auto_Config_Value_Updated[BP_TOTAL_CONNECTOR][BP_TOTAL_SEP_3] = {{0}};
+    size_t write_count   = 1;
+    size_t read_count    = 1;
+    uint8_t  write_data[2] = {0};
+    uint8_t  read_data[2]  = {0};
+    int    ret           = -1;
     int fd = -1;
 
     if(BP_DEBUG) sd_journal_print(LOG_INFO,"%s bus:%s bp:%d  sep:%d  offset:0x%.2x  value:0x%.2x\n", __FUNCTION__, bus_name, which_bp, which_sep, offset,value);
@@ -373,13 +348,13 @@ int Check_BP_Starting_Slot_Number(char* bus_name, uint8_t which_bp, uint8_t whic
  */
 int Check_BP_Starting_Host_Facing_Connector_Identity(char* bus_name, uint8_t which_bp, uint8_t which_sep)
 {
-	uint8_t offset = BP_CONTROL_REGISTER_START_HFC_IDENTITY;
-	uint8_t value  = (BP_Present_List[which_bp].BP_HFC[which_sep]);
-	int ret      = FAILURE;
+    uint8_t offset = BP_CONTROL_REGISTER_START_HFC_IDENTITY;
+    uint8_t value  = (BP_Present_List[which_bp].BP_HFC[which_sep]);
+    int ret      = FAILURE;
 
-	ret = Check_BP_Auto_Configuration_Register(bus_name, which_bp, which_sep, offset, value);
+    ret = Check_BP_Auto_Configuration_Register(bus_name, which_bp, which_sep, offset, value);
 
-	return ret;
+    return ret;
 }
 
 /* Auto-Configuration Step 8 – Indicate type of system and supported management protocol.
@@ -389,13 +364,13 @@ int Check_BP_Starting_Host_Facing_Connector_Identity(char* bus_name, uint8_t whi
  */
 int Check_BP_System_Type_Managment_Protocol_Support(char* bus_name, uint8_t which_bp, uint8_t which_sep)
 {
-	uint8_t offset = BP_CONTROL_REGISTER_SYSTEM_MGMT_PROTOCOL;
-	uint8_t value  = (BP_SYSTEM_TYPE_AMD_HS | BP_MANAGEMENT_PROTOCOL_SGPIO_I2CHP_UBM);
-	int ret      = FAILURE;
+    uint8_t offset = BP_CONTROL_REGISTER_SYSTEM_MGMT_PROTOCOL;
+    uint8_t value  = (BP_SYSTEM_TYPE_AMD_HS | BP_MANAGEMENT_PROTOCOL_SGPIO_I2CHP_UBM);
+    int ret      = FAILURE;
 
-	ret = Check_BP_Auto_Configuration_Register(bus_name, which_bp, which_sep, offset, value);
+    ret = Check_BP_Auto_Configuration_Register(bus_name, which_bp, which_sep, offset, value);
 
-	return ret;
+    return ret;
 }
 
 /* Auto-Configuration Step 9 – Auto-configuration enable register is set by the BMC to 0xBE (enable).
@@ -406,13 +381,13 @@ int Check_BP_System_Type_Managment_Protocol_Support(char* bus_name, uint8_t whic
  */
 int Check_BP_Enable_Auto_Configuration_Register(char* bus_name, uint8_t which_bp, uint8_t which_sep)
 {
-	uint8_t offset = BP_CONTROL_REGISTER_AUTO_CONFIG_ENABLE;
-	uint8_t value  = 0xBE;
-	int ret      = FAILURE;
+    uint8_t offset = BP_CONTROL_REGISTER_AUTO_CONFIG_ENABLE;
+    uint8_t value  = 0xBE;
+    int ret      = FAILURE;
 
-	ret = Check_BP_Auto_Configuration_Register(bus_name, which_bp, which_sep, offset, value);
+    ret = Check_BP_Auto_Configuration_Register(bus_name, which_bp, which_sep, offset, value);
 
-	return ret;
+    return ret;
 }
 
 /* Perform BP auto-configuration task with a total of 9 steps as suggested in BP SEP FW specification Chapter 5.
@@ -489,17 +464,17 @@ int BP_Auto_Configuration_Handler(char* bus_name, uint8_t which_bp, uint8_t whic
  */
 int BP_SEP_Init_Handler(uint8_t which_bp)
 {
-	char bus_name[16] = "";
-	int  i           = 0;
-	int  ret         = FAILURE;
+    char bus_name[16] = "";
+    int  i           = 0;
+    int  ret         = FAILURE;
 
     if (BP_Present_List[which_bp].BP_Total_SEP == 0)
         return ret;
 
     if (BP_TOTAL_SEP_1 < BP_Present_List[which_bp].BP_Total_SEP)
     {
-		for (i = 0; i < BP_Present_List[which_bp].BP_Total_SEP; i++)
-		{
+        for (i = 0; i < BP_Present_List[which_bp].BP_Total_SEP; i++)
+        {
             snprintf(bus_name, sizeof(bus_name),PREFIX_BPBUS, 55 + (which_bp * 2) + i);
             if(BP_DEBUG) sd_journal_print(LOG_INFO,"%s:%d  bus:%s\n", __FUNCTION__, __LINE__ , bus_name);
             ret = BP_Auto_Configuration_Handler(bus_name, which_bp, i);
@@ -513,17 +488,41 @@ int BP_SEP_Init_Handler(uint8_t which_bp)
     else
     {
         snprintf(bus_name, sizeof(bus_name),PREFIX_BPBUS, 55 + (which_bp * 2));
-		ret = BP_Auto_Configuration_Handler(bus_name, which_bp, i);
-		if (SUCCESS != ret)
-		{
-			sd_journal_print(LOG_ERR,"[%s][%d] Failed Auto-Config on BP [%d] with return code [0x%x]!\n", __FUNCTION__, __LINE__, which_bp, ret);
-			return ret;
-		}
+        ret = BP_Auto_Configuration_Handler(bus_name, which_bp, i);
+        if (SUCCESS != ret)
+        {
+            sd_journal_print(LOG_ERR,"[%s][%d] Failed Auto-Config on BP [%d] with return code [0x%x]!\n", __FUNCTION__, __LINE__, which_bp, ret);
+            return ret;
+        }
     }
 
-	return SUCCESS;
+    return SUCCESS;
 }
 
+int read_HPM_FRU_Info(uint8_t offset, uint8_t size , const char *fru_path, char *data)
+{
+
+    FILE *fp = NULL;
+    int  nRet;
+
+    if ((fp = fopen (fru_path, "r")) == NULL)
+    {
+        sd_journal_print(LOG_ERR,"fopen %s fail!!\n",fru_path);
+        return FAILURE;
+    }
+
+    nRet = fseek( fp, offset, SEEK_SET );
+    if (nRet != 0)
+    {
+        fclose( fp );
+        sd_journal_print(LOG_ERR,"fseek %s fail!!\n",fru_path);
+        return FAILURE;
+    }
+    nRet = fread( data, 1, size, fp );
+    fclose(fp);
+
+    return SUCCESS;
+}
 /* Check BP FRU info against BP_Table_List's BP_Name field.
  * arg: which_bp (BP connector offset)
  * arg: which_fru path (corresponding BP FRU path)
@@ -548,7 +547,7 @@ int Check_BP_FRU_Info(uint8_t which_bp, const char *fru_path)
         sd_journal_print(LOG_ERR,"fseek %s fail!!\n",fru_path);
         return FAILURE;
     }
-    fread( bp_fru_info, 1, BP_FRU_BOARD_PRODUCT_SIZE, fp );
+    nRet = fread( bp_fru_info, 1, BP_FRU_BOARD_PRODUCT_SIZE, fp );
     fclose(fp);
     if(BP_DEBUG) sd_journal_print(LOG_INFO,"%s:%d  %s\n",__FUNCTION__, __LINE__, bp_fru_info);
 
@@ -557,7 +556,8 @@ int Check_BP_FRU_Info(uint8_t which_bp, const char *fru_path)
         if (NULL != strstr(bp_fru_info, BP_Table_List[i].BP_Name))
         {
             BP_Present_List[which_bp] = BP_Table_List[i];
-            sd_journal_print(LOG_INFO,"BP#%d [%s] detected with [%d] SEP.\n", which_bp, BP_Present_List[which_bp].BP_Name, BP_Present_List[which_bp].BP_Total_SEP);
+            sd_journal_print(LOG_INFO,"BP#%d [%s] detected with [%d] SEP.\n", 
+                             which_bp, BP_Present_List[which_bp].BP_Name, BP_Present_List[which_bp].BP_Total_SEP);
             return SUCCESS;
         }
     }
@@ -573,21 +573,20 @@ int Check_BP_FRU_Info(uint8_t which_bp, const char *fru_path)
   */
 int BP_Init_Handler(uint8_t which_bp, const char *fru_path)
 {
-	int ret = FAILURE;
+    int ret = FAILURE;
 
     if(which_bp >= BP_TOTAL_CONNECTOR)
         return ret;
 
-	if (0 == BP_Present_List[which_bp].BP_Total_SEP)
-	{
-		ret = Check_BP_FRU_Info(which_bp, fru_path);
-		if (SUCCESS != ret)
-		{
-			return ret;
-		}
-	}
+    if (0 == BP_Present_List[which_bp].BP_Total_SEP)
+    {
+        ret = Check_BP_FRU_Info(which_bp, fru_path);
+        if (SUCCESS != ret) {
+                return ret;
+        }
+    }
 
-	ret = BP_SEP_Init_Handler(which_bp);
+    ret = BP_SEP_Init_Handler(which_bp);
     return ret;
 }
 
@@ -600,12 +599,12 @@ void BP_auto_config(uint8_t BP_Config_List_Count, BP_Config *list)
 {
     for (int8_t i = 0; i < BP_Config_List_Count; i++)
     {
-		if( access( list[i].BP_EEPROM , F_OK ) != -1 ) {
+        if( access( list[i].BP_EEPROM , F_OK ) != -1 ) {
             sd_journal_print(LOG_INFO,"%s check OK!!\n",list[i].BP_EEPROM);
             BP_Init_Handler(list[i].BP_Connector_Offset, list[i].BP_EEPROM);
-		} else {
-			sd_journal_print(LOG_INFO,"%s check Fail!!\n",list[i].BP_EEPROM);
-		}
+        } else {
+            sd_journal_print(LOG_INFO,"%s check Fail!!\n",list[i].BP_EEPROM);
+        }
     }
 }
 
@@ -614,10 +613,15 @@ int main(int argc, char **argv)
 {
     FILE *pf = NULL;
     char data[COMMAND_POR_RST_LEN];
-    unsigned int board_id = 0;
+    unsigned int board_id   = 0;
+    unsigned int board_rev1 = 0;
+    unsigned int board_rev2 = 0;
     std::stringstream ss;
     int reg_cnt=0;
     BP_Config BP_Config_List[BP_TOTAL_CONNECTOR];
+    char fru_data[HPM_FRU_INTERNAL_SIZE];
+    const char fru_path[SYS_EEPROM_PATH_LENGTH]=HPM_FRU_PATH;
+    int ret;
 
     // Check for Power On Reset
     pf = popen(COMMAND_POR_RST,"r");
@@ -630,25 +634,25 @@ int main(int argc, char **argv)
     if(pf)
         pclose(pf);
 
+/*MOZZZ
     if (strncmp(data, "true", COMMAND_POR_RST_RSP_LEN) != 0)
         return 0; //Not a Power On Reset
+*/
 
     // Look for Lenovo systems
-    pf = popen(COMMAND_BOARD_ID,"r");
-    if(pf)
+    ret = read_HPM_FRU_Info((uint8_t)HPM_FRU_INTERNAL_OFFSET, (uint8_t)HPM_FRU_INTERNAL_SIZE, fru_path, fru_data );
+    if (ret == SUCCESS)
     {
-        // Get the data from the process execution
-        if (fgets(data, COMMAND_BOARD_ID_LEN, pf))
-        {
-            ss << std::hex << (std::string)data;
-            ss >> board_id;
-            sd_journal_print(LOG_INFO, "Board ID: 0x%x, Board ID String: %s\n", board_id, data);
-        }
-
+        board_id   = fru_data[BOARD_ID_OFFSET];
+        board_rev1 = fru_data[BOARD_REV_OFFSET];
+        board_rev2 = fru_data[BOARD_REV_OFFSET+1];
+        sd_journal_print(LOG_INFO, "Board ID: 0x%x, Board Rev: 0x%2x%2x\n", board_id, board_rev1, board_rev2);
     }
-    if(pf)
-        pclose(pf);
-
+    else
+    {
+        sd_journal_print(LOG_ERR, "Cannot Read HPM FRU %s\n", fru_path);
+        return ret;
+    }
     switch (board_id)
     {
         case PURICO:
@@ -659,6 +663,13 @@ int main(int argc, char **argv)
         case VOLCANO_2:
         {
             sd_journal_print(LOG_INFO, "Lenovo Platform: Configure BP  \n");
+            if(board_rev2 == BOARD_REV_EVT1)
+            {
+                sd_journal_print(LOG_INFO, "Lenovo Platform EVT1: Disable UBM BP  \n");
+                bp_config(0);
+                return SUCCESS;
+            }
+
             uint8_t BP_Config_List_Count = 3;
             memset(BP_Present_List,      0, sizeof(BP_Present_List));
 
@@ -673,14 +684,6 @@ int main(int argc, char **argv)
             BP_Config_List[2].Disk_Start_Index = 0xFF;
 
             BP_auto_config(BP_Config_List_Count, BP_Config_List);
-
-#if 0
-            if(bp_open_dev() == SUCCESS) {
-                reg_cnt = bp_read_conf();
-                bp_config(reg_cnt);
-            }
-            bp_close_dev();
-#endif
         }
             break;
         default:
