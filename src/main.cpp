@@ -47,9 +47,9 @@ static int bp_reg_data[CTL_MAX_REG];
 
 const BP_Info BP_Table_List[] =
 {
-		/* BP Name in FRU,					BP ID (BP Type Code), 			BP Total SEP,		BP Total Bay        BP Type, 				BP Group ID         HFC */
-		{"None",                            BP_ID_NONE, 		            BP_TOTAL_SEP_0, 	BP_TOTAL_BAY_8, 	BP_TYPE_ANYBAY, 		BP_Group_ID_4,      {0, 0}        },
-		{"2U 2.5\" Anybay 8-Bay BP",        BP_ID_2U_2_5_Anybay_8_Bay, 		BP_TOTAL_SEP_2, 	BP_TOTAL_BAY_8, 	BP_TYPE_ANYBAY, 		BP_Group_ID_4,      {0, 5}        },
+        /* BP Name in FRU,                  BP ID (BP Type Code),           BP Total SEP,       BP Total Bay        BP Type,                BP Group ID         HFC */
+        {"None",                            BP_ID_NONE,                     BP_TOTAL_SEP_0,     BP_TOTAL_BAY_8,     BP_TYPE_ANYBAY,         BP_Group_ID_4,      {0, 0}        },
+        {"2U 2.5\" Anybay 8-Bay BP",        BP_ID_2U_2_5_Anybay_8_Bay,      BP_TOTAL_SEP_2,     BP_TOTAL_BAY_8,     BP_TYPE_ANYBAY,         BP_Group_ID_4,      {0, 5}        },
 };
 const int BP_Table_List_Count = (sizeof(BP_Table_List) / sizeof(BP_Table_List[0]));
 
@@ -224,12 +224,12 @@ int bp_read_conf()
  */
 int Check_BP_Auto_Configuration_Register(char* bus_name, uint8_t which_bp, uint8_t which_sep, uint8_t offset, uint8_t value)
 {
-	static bool Is_Auto_Config_Value_Updated[BP_TOTAL_CONNECTOR][BP_TOTAL_SEP_3] = {{0}};
-	size_t write_count   = 1;
-	size_t read_count    = 1;
-	uint8_t  write_data[2] = {0};
-	uint8_t  read_data[2]  = {0};
-	int    ret           = -1;
+    static bool Is_Auto_Config_Value_Updated[BP_TOTAL_CONNECTOR][BP_TOTAL_SEP_3] = {{0}};
+    size_t write_count   = 1;
+    size_t read_count    = 1;
+    uint8_t  write_data[2] = {0};
+    uint8_t  read_data[2]  = {0};
+    int    ret           = -1;
     int fd = -1;
 
     if(BP_DEBUG) sd_journal_print(LOG_INFO,"%s bus:%s bp:%d  sep:%d  offset:0x%.2x  value:0x%.2x\n", __FUNCTION__, bus_name, which_bp, which_sep, offset,value);
@@ -253,7 +253,7 @@ int Check_BP_Auto_Configuration_Register(char* bus_name, uint8_t which_bp, uint8
 
     close(fd);
 
-	return SUCCESS;
+    return SUCCESS;
 }
 
 
@@ -266,21 +266,21 @@ int Check_BP_Auto_Configuration_Register(char* bus_name, uint8_t which_bp, uint8
  */
 int Check_BP_Group_ID(char* bus_name, uint8_t which_bp, uint8_t which_sep)
 {
-	uint8_t offset = BP_CONTROL_REGISTER_GROUP_ID;
-	uint8_t value  = 0x01;
-	int   ret    = FAILURE;
+    uint8_t offset = BP_CONTROL_REGISTER_GROUP_ID;
+    uint8_t value  = 0x01;
+    int   ret    = FAILURE;
 
-	if (BP_Group_ID_4 == BP_Present_List[which_bp].BP_Group_ID)
-	{
-		value = (which_sep + 1);
-	}
-	else
-	{
-		value = ((which_sep * 2) + 1);
-	}
+    if (BP_Group_ID_4 == BP_Present_List[which_bp].BP_Group_ID)
+    {
+        value = (which_sep + 1);
+    }
+    else
+    {
+        value = ((which_sep * 2) + 1);
+    }
 
-	ret = Check_BP_Auto_Configuration_Register(bus_name, which_bp, which_sep, offset, value);
-	return ret;
+    ret = Check_BP_Auto_Configuration_Register(bus_name, which_bp, which_sep, offset, value);
+    return ret;
 }
 
 /* Auto-Configuration Step 2 – This is the PCIe slot information.
@@ -291,13 +291,13 @@ int Check_BP_Group_ID(char* bus_name, uint8_t which_bp, uint8_t which_sep)
  */
 int Check_BP_Slot_ID(char* bus_name, uint8_t which_bp, uint8_t which_sep)
 {
-	uint8_t offset = BP_CONTROL_REGISTER_SLOT_ID;
-	uint8_t value  = (0x40 + (BP_Present_List[which_bp].BP_Group_ID * which_sep));
-	int ret      = FAILURE;
+    uint8_t offset = BP_CONTROL_REGISTER_SLOT_ID;
+    uint8_t value  = (0x40 + (BP_Present_List[which_bp].BP_Group_ID * which_sep));
+    int ret      = FAILURE;
 
-	ret = Check_BP_Auto_Configuration_Register(bus_name, which_bp, which_sep, offset, value);
+    ret = Check_BP_Auto_Configuration_Register(bus_name, which_bp, which_sep, offset, value);
 
-	return ret;
+    return ret;
 }
 
 /* Auto-Configuration Step 3 – This is the physical backplane Bay location in the enclosure.
@@ -308,13 +308,13 @@ int Check_BP_Slot_ID(char* bus_name, uint8_t which_bp, uint8_t which_sep)
  */
 int Check_BP_Bay_ID(char* bus_name, uint8_t which_bp, uint8_t which_sep)
 {
-	uint8_t offset = BP_CONTROL_REGISTER_BAY_ID;
-	uint8_t value  = (BP_Present_List[which_bp].BP_Group_ID * which_sep);
-	int ret      = FAILURE;
+    uint8_t offset = BP_CONTROL_REGISTER_BAY_ID;
+    uint8_t value  = (BP_Present_List[which_bp].BP_Group_ID * which_sep);
+    int ret      = FAILURE;
 
-	ret = Check_BP_Auto_Configuration_Register(bus_name, which_bp, which_sep, offset, value);
+    ret = Check_BP_Auto_Configuration_Register(bus_name, which_bp, which_sep, offset, value);
 
-	return ret;
+    return ret;
 }
 
 /* Auto-Configuration Step 4 –  This register describe the backplane configuration.
@@ -324,13 +324,13 @@ int Check_BP_Bay_ID(char* bus_name, uint8_t which_bp, uint8_t which_sep)
  */
 int Check_BP_Backplane_Information(char* bus_name, uint8_t which_bp, uint8_t which_sep)
 {
-	uint8_t offset = BP_CONTROL_REGISTER_BACKPLANE_INFO;
-	uint8_t value  = (which_bp + 1);
-	int ret      = FAILURE;
+    uint8_t offset = BP_CONTROL_REGISTER_BACKPLANE_INFO;
+    uint8_t value  = (which_bp + 1);
+    int ret      = FAILURE;
 
-	ret = Check_BP_Auto_Configuration_Register(bus_name, which_bp, which_sep, offset, value);
+    ret = Check_BP_Auto_Configuration_Register(bus_name, which_bp, which_sep, offset, value);
 
-	return ret;
+    return ret;
 }
 
 /* Auto-Configuration Step 5 – Indicates the number of slots/bays on the backplane.
@@ -341,13 +341,13 @@ int Check_BP_Backplane_Information(char* bus_name, uint8_t which_bp, uint8_t whi
  */
 int Check_BP_Number_of_Slots(char* bus_name, uint8_t which_bp, uint8_t which_sep)
 {
-	uint8_t offset = BP_CONTROL_REGISTER_NUM_OF_SLOTS;
-	uint8_t value  = BP_Present_List[which_bp].BP_Total_Bay;
-	int ret      = FAILURE;
+    uint8_t offset = BP_CONTROL_REGISTER_NUM_OF_SLOTS;
+    uint8_t value  = BP_Present_List[which_bp].BP_Total_Bay;
+    int ret      = FAILURE;
 
-	ret = Check_BP_Auto_Configuration_Register(bus_name, which_bp, which_sep, offset, value);
+    ret = Check_BP_Auto_Configuration_Register(bus_name, which_bp, which_sep, offset, value);
 
-	return ret;
+    return ret;
 }
 
 /* Auto-Configuration Step 6 – Indicating the starting physical backplane bay location for each SEP.
@@ -357,13 +357,13 @@ int Check_BP_Number_of_Slots(char* bus_name, uint8_t which_bp, uint8_t which_sep
  */
 int Check_BP_Starting_Slot_Number(char* bus_name, uint8_t which_bp, uint8_t which_sep)
 {
-	uint8_t offset = BP_CONTROL_REGISTER_START_SLOT_NUM;
-	uint8_t value  = (BP_Present_List[which_bp].BP_Group_ID * which_sep);
-	int ret      = FAILURE;
+    uint8_t offset = BP_CONTROL_REGISTER_START_SLOT_NUM;
+    uint8_t value  = (BP_Present_List[which_bp].BP_Group_ID * which_sep);
+    int ret      = FAILURE;
 
-	ret = Check_BP_Auto_Configuration_Register(bus_name, which_bp, which_sep, offset, value);
+    ret = Check_BP_Auto_Configuration_Register(bus_name, which_bp, which_sep, offset, value);
 
-	return ret;
+    return ret;
 }
 
 /* Auto-Configuration Step 7 – Indicate type of system and supported management protocol.
@@ -373,13 +373,13 @@ int Check_BP_Starting_Slot_Number(char* bus_name, uint8_t which_bp, uint8_t whic
  */
 int Check_BP_Starting_Host_Facing_Connector_Identity(char* bus_name, uint8_t which_bp, uint8_t which_sep)
 {
-	uint8_t offset = BP_CONTROL_REGISTER_START_HFC_IDENTITY;
-	uint8_t value  = (BP_Present_List[which_bp].BP_HFC[which_sep]);
-	int ret      = FAILURE;
+    uint8_t offset = BP_CONTROL_REGISTER_START_HFC_IDENTITY;
+    uint8_t value  = (BP_Present_List[which_bp].BP_HFC[which_sep]);
+    int ret      = FAILURE;
 
-	ret = Check_BP_Auto_Configuration_Register(bus_name, which_bp, which_sep, offset, value);
+    ret = Check_BP_Auto_Configuration_Register(bus_name, which_bp, which_sep, offset, value);
 
-	return ret;
+    return ret;
 }
 
 /* Auto-Configuration Step 8 – Indicate type of system and supported management protocol.
@@ -389,13 +389,13 @@ int Check_BP_Starting_Host_Facing_Connector_Identity(char* bus_name, uint8_t whi
  */
 int Check_BP_System_Type_Managment_Protocol_Support(char* bus_name, uint8_t which_bp, uint8_t which_sep)
 {
-	uint8_t offset = BP_CONTROL_REGISTER_SYSTEM_MGMT_PROTOCOL;
-	uint8_t value  = (BP_SYSTEM_TYPE_AMD_HS | BP_MANAGEMENT_PROTOCOL_SGPIO_I2CHP_UBM);
-	int ret      = FAILURE;
+    uint8_t offset = BP_CONTROL_REGISTER_SYSTEM_MGMT_PROTOCOL;
+    uint8_t value  = (BP_MANAGEMENT_PROTOCOL_SGPIO_I2CHP_UBM);
+    int ret      = FAILURE;
 
-	ret = Check_BP_Auto_Configuration_Register(bus_name, which_bp, which_sep, offset, value);
+    ret = Check_BP_Auto_Configuration_Register(bus_name, which_bp, which_sep, offset, value);
 
-	return ret;
+    return ret;
 }
 
 /* Auto-Configuration Step 9 – Auto-configuration enable register is set by the BMC to 0xBE (enable).
@@ -406,13 +406,13 @@ int Check_BP_System_Type_Managment_Protocol_Support(char* bus_name, uint8_t whic
  */
 int Check_BP_Enable_Auto_Configuration_Register(char* bus_name, uint8_t which_bp, uint8_t which_sep)
 {
-	uint8_t offset = BP_CONTROL_REGISTER_AUTO_CONFIG_ENABLE;
-	uint8_t value  = 0xBE;
-	int ret      = FAILURE;
+    uint8_t offset = BP_CONTROL_REGISTER_AUTO_CONFIG_ENABLE;
+    uint8_t value  = 0xBE;
+    int ret      = FAILURE;
 
-	ret = Check_BP_Auto_Configuration_Register(bus_name, which_bp, which_sep, offset, value);
+    ret = Check_BP_Auto_Configuration_Register(bus_name, which_bp, which_sep, offset, value);
 
-	return ret;
+    return ret;
 }
 
 /* Perform BP auto-configuration task with a total of 9 steps as suggested in BP SEP FW specification Chapter 5.
@@ -423,65 +423,65 @@ int Check_BP_Enable_Auto_Configuration_Register(char* bus_name, uint8_t which_bp
  */
 int BP_Auto_Configuration_Handler(char* bus_name, uint8_t which_bp, uint8_t which_sep)
 {
-	int ret = FAILURE;
+    int ret = FAILURE;
 
-	ret = Check_BP_Group_ID(bus_name, which_bp, which_sep);
-	if (0 != ret)
-	{
-		return ret;
-	}
+    ret = Check_BP_Group_ID(bus_name, which_bp, which_sep);
+    if (0 != ret)
+    {
+        return ret;
+    }
 
-	if (BP_TYPE_SAS_SATA != BP_Present_List[which_bp].BP_Type)
-	{
-		ret = Check_BP_Slot_ID(bus_name, which_bp, which_sep);
-		if (0 != ret)
-		{
-			return ret;
-		}
+    if (BP_TYPE_SAS_SATA != BP_Present_List[which_bp].BP_Type)
+    {
+        ret = Check_BP_Slot_ID(bus_name, which_bp, which_sep);
+        if (0 != ret)
+        {
+            return ret;
+        }
 
-		ret = Check_BP_Bay_ID(bus_name, which_bp, which_sep);
-		if (0 != ret)
-		{
-			return ret;
-		}
-	}
+        ret = Check_BP_Bay_ID(bus_name, which_bp, which_sep);
+        if (0 != ret)
+        {
+            return ret;
+        }
+    }
 
-	ret = Check_BP_Backplane_Information(bus_name, which_bp, which_sep);
-	if (0 != ret)
-	{
-		return ret;
-	}
+    ret = Check_BP_Backplane_Information(bus_name, which_bp, which_sep);
+    if (0 != ret)
+    {
+        return ret;
+    }
 
-	ret = Check_BP_Number_of_Slots(bus_name, which_bp, which_sep);
-	if (0 != ret)
-	{
-		return ret;
-	}
+    ret = Check_BP_Number_of_Slots(bus_name, which_bp, which_sep);
+    if (0 != ret)
+    {
+        return ret;
+    }
 
-	ret = Check_BP_Starting_Slot_Number(bus_name, which_bp, which_sep);
-	if (0 != ret)
-	{
-		return ret;
-	}
+    ret = Check_BP_Starting_Slot_Number(bus_name, which_bp, which_sep);
+    if (0 != ret)
+    {
+        return ret;
+    }
 
-	ret = Check_BP_Starting_Host_Facing_Connector_Identity(bus_name, which_bp, which_sep);
-	if (0 != ret)
-	{
-		return ret;
-	}
+    ret = Check_BP_Starting_Host_Facing_Connector_Identity(bus_name, which_bp, which_sep);
+    if (0 != ret)
+    {
+        return ret;
+    }
 
-	ret = Check_BP_System_Type_Managment_Protocol_Support(bus_name, which_bp, which_sep);
-	if (0 != ret)
-	{
-		return ret;
-	}
+    ret = Check_BP_System_Type_Managment_Protocol_Support(bus_name, which_bp, which_sep);
+    if (0 != ret)
+    {
+        return ret;
+    }
 
-	ret = Check_BP_Enable_Auto_Configuration_Register(bus_name, which_bp, which_sep);
-	if (0 != ret)
-	{
-		return ret;
-	}
-	return 0;
+    ret = Check_BP_Enable_Auto_Configuration_Register(bus_name, which_bp, which_sep);
+    if (0 != ret)
+    {
+        return ret;
+    }
+    return 0;
 }
 
 /* All BP tasks that require access to BP SEP (pSoC) before accessing BP register should be added in this function.
@@ -489,17 +489,17 @@ int BP_Auto_Configuration_Handler(char* bus_name, uint8_t which_bp, uint8_t whic
  */
 int BP_SEP_Init_Handler(uint8_t which_bp)
 {
-	char bus_name[16] = "";
-	int  i           = 0;
-	int  ret         = FAILURE;
+    char bus_name[16] = "";
+    int  i           = 0;
+    int  ret         = FAILURE;
 
     if (BP_Present_List[which_bp].BP_Total_SEP == 0)
         return ret;
 
     if (BP_TOTAL_SEP_1 < BP_Present_List[which_bp].BP_Total_SEP)
     {
-		for (i = 0; i < BP_Present_List[which_bp].BP_Total_SEP; i++)
-		{
+        for (i = 0; i < BP_Present_List[which_bp].BP_Total_SEP; i++)
+        {
             snprintf(bus_name, sizeof(bus_name),PREFIX_BPBUS, 55 + (which_bp * 2) + i);
             if(BP_DEBUG) sd_journal_print(LOG_INFO,"%s:%d  bus:%s\n", __FUNCTION__, __LINE__ , bus_name);
             ret = BP_Auto_Configuration_Handler(bus_name, which_bp, i);
@@ -513,15 +513,15 @@ int BP_SEP_Init_Handler(uint8_t which_bp)
     else
     {
         snprintf(bus_name, sizeof(bus_name),PREFIX_BPBUS, 55 + (which_bp * 2));
-		ret = BP_Auto_Configuration_Handler(bus_name, which_bp, i);
-		if (SUCCESS != ret)
-		{
-			sd_journal_print(LOG_ERR,"[%s][%d] Failed Auto-Config on BP [%d] with return code [0x%x]!\n", __FUNCTION__, __LINE__, which_bp, ret);
-			return ret;
-		}
+        ret = BP_Auto_Configuration_Handler(bus_name, which_bp, i);
+        if (SUCCESS != ret)
+        {
+            sd_journal_print(LOG_ERR,"[%s][%d] Failed Auto-Config on BP [%d] with return code [0x%x]!\n", __FUNCTION__, __LINE__, which_bp, ret);
+            return ret;
+        }
     }
 
-	return SUCCESS;
+    return SUCCESS;
 }
 
 /* Check BP FRU info against BP_Table_List's BP_Name field.
@@ -573,21 +573,21 @@ int Check_BP_FRU_Info(uint8_t which_bp, const char *fru_path)
   */
 int BP_Init_Handler(uint8_t which_bp, const char *fru_path)
 {
-	int ret = FAILURE;
+    int ret = FAILURE;
 
     if(which_bp >= BP_TOTAL_CONNECTOR)
         return ret;
 
-	if (0 == BP_Present_List[which_bp].BP_Total_SEP)
-	{
-		ret = Check_BP_FRU_Info(which_bp, fru_path);
-		if (SUCCESS != ret)
-		{
-			return ret;
-		}
-	}
+    if (0 == BP_Present_List[which_bp].BP_Total_SEP)
+    {
+        ret = Check_BP_FRU_Info(which_bp, fru_path);
+        if (SUCCESS != ret)
+        {
+            return ret;
+        }
+    }
 
-	ret = BP_SEP_Init_Handler(which_bp);
+    ret = BP_SEP_Init_Handler(which_bp);
     return ret;
 }
 
@@ -600,12 +600,12 @@ void BP_auto_config(uint8_t BP_Config_List_Count, BP_Config *list)
 {
     for (int8_t i = 0; i < BP_Config_List_Count; i++)
     {
-		if( access( list[i].BP_EEPROM , F_OK ) != -1 ) {
+        if( access( list[i].BP_EEPROM , F_OK ) != -1 ) {
             sd_journal_print(LOG_INFO,"%s check OK!!\n",list[i].BP_EEPROM);
             BP_Init_Handler(list[i].BP_Connector_Offset, list[i].BP_EEPROM);
-		} else {
-			sd_journal_print(LOG_INFO,"%s check Fail!!\n",list[i].BP_EEPROM);
-		}
+        } else {
+            sd_journal_print(LOG_INFO,"%s check Fail!!\n",list[i].BP_EEPROM);
+        }
     }
 }
 
