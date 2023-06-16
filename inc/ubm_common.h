@@ -89,6 +89,8 @@
 //BP unique ID
 #define BP_ID_NONE                                                  0xC0
 #define BP_ID_2U_2_5_Anybay_8_Bay                                   0xC1
+#define BP_ID_2U_U3_Anybay_8_Bay                                    0xD1
+
 
 //BP auto configuration offset
 #define BP_CONTROL_REGISTER_GROUP_ID                                0x0D

@@ -50,6 +50,7 @@ const BP_Info BP_Table_List[] =
         /* BP Name in FRU,                  BP ID (BP Type Code),           BP Total SEP,       BP Total Bay        BP Type,                BP Group ID         HFC */
         {"None",                            BP_ID_NONE,                     BP_TOTAL_SEP_0,     BP_TOTAL_BAY_8,     BP_TYPE_ANYBAY,         BP_Group_ID_4,      {0, 0}        },
         {"2U 2.5\" Anybay 8-Bay BP",        BP_ID_2U_2_5_Anybay_8_Bay,      BP_TOTAL_SEP_2,     BP_TOTAL_BAY_8,     BP_TYPE_ANYBAY,         BP_Group_ID_4,      {0, 5}        },
+        {"2U Volcano U.3 8-Bay BP",         BP_ID_2U_U3_Anybay_8_Bay,       BP_TOTAL_SEP_1,     BP_TOTAL_BAY_8,     BP_TYPE_NVME,           BP_Group_ID_4,      {0, 5}        },
 };
 const int BP_Table_List_Count = (sizeof(BP_Table_List) / sizeof(BP_Table_List[0]));
 
@@ -259,7 +260,7 @@ int Check_BP_Auto_Configuration_Register(char* bus_name, uint8_t which_bp, uint8
 
 
 
-/* Auto-Configuration Step 1 – Range of values are 1-8; by 4 or by 8 group.
+/* Auto-Configuration Step 1 Range of values are 1-8; by 4 or by 8 group.
  * arg: bus_name (i2c bus name for BP)
  * arg: which_bp (BP connector offset)
  * arg: which_sep (which SEP in a BP)
@@ -283,7 +284,7 @@ int Check_BP_Group_ID(char* bus_name, uint8_t which_bp, uint8_t which_sep)
     return ret;
 }
 
-/* Auto-Configuration Step 2 – This is the PCIe slot information.
+/* Auto-Configuration Step 2 This is the PCIe slot information.
  * This step is skipped in SAS/SATA only BP.
  * arg: bus_name (i2c bus name for BP)
  * arg: which_bp (BP connector offset)
@@ -300,7 +301,7 @@ int Check_BP_Slot_ID(char* bus_name, uint8_t which_bp, uint8_t which_sep)
     return ret;
 }
 
-/* Auto-Configuration Step 3 – This is the physical backplane Bay location in the enclosure.
+/* Auto-Configuration Step 3 This is the physical backplane Bay location in the enclosure.
  * This step is skipped in SAS/SATA only BP.
  * arg: bus_name (i2c bus name for BP)
  * arg: which_bp (BP connector offset)
@@ -317,7 +318,7 @@ int Check_BP_Bay_ID(char* bus_name, uint8_t which_bp, uint8_t which_sep)
     return ret;
 }
 
-/* Auto-Configuration Step 4 –  This register describe the backplane configuration.
+/* Auto-Configuration Step 4 This register describe the backplane configuration.
  * arg: bus_name (i2c bus name for BP)
  * arg: which_bp (BP connector offset)
  * arg: which_sep (which SEP in a BP)
@@ -333,7 +334,7 @@ int Check_BP_Backplane_Information(char* bus_name, uint8_t which_bp, uint8_t whi
     return ret;
 }
 
-/* Auto-Configuration Step 5 – Indicates the number of slots/bays on the backplane.
+/* Auto-Configuration Step 5 Indicates the number of slots/bays on the backplane.
  * Each SEP on a backplane receive the same number of slots.
  * arg: bus_name (i2c bus name for BP)
  * arg: which_bp (BP connector offset)
@@ -350,7 +351,7 @@ int Check_BP_Number_of_Slots(char* bus_name, uint8_t which_bp, uint8_t which_sep
     return ret;
 }
 
-/* Auto-Configuration Step 6 – Indicating the starting physical backplane bay location for each SEP.
+/* Auto-Configuration Step 6 Indicating the starting physical backplane bay location for each SEP.
  * arg: bus_name (i2c bus name for BP)
  * arg: which_bp (BP connector offset)
  * arg: which_sep (which SEP in a BP)
@@ -366,7 +367,7 @@ int Check_BP_Starting_Slot_Number(char* bus_name, uint8_t which_bp, uint8_t whic
     return ret;
 }
 
-/* Auto-Configuration Step 7 – Indicate type of system and supported management protocol.
+/* Auto-Configuration Step 7 Indicate type of system and supported management protocol.
  * arg: bus_name (i2c bus name for BP)
  * arg: which_bp (BP connector offset)
  * arg: which_sep (which SEP in a BP)
@@ -382,7 +383,7 @@ int Check_BP_Starting_Host_Facing_Connector_Identity(char* bus_name, uint8_t whi
     return ret;
 }
 
-/* Auto-Configuration Step 8 – Indicate type of system and supported management protocol.
+/* Auto-Configuration Step 8 Indicate type of system and supported management protocol.
  * arg: bus_name (i2c bus name for BP)
  * arg: which_bp (BP connector offset)
  * arg: which_sep (which SEP in a BP)
@@ -398,7 +399,7 @@ int Check_BP_System_Type_Managment_Protocol_Support(char* bus_name, uint8_t whic
     return ret;
 }
 
-/* Auto-Configuration Step 9 – Auto-configuration enable register is set by the BMC to 0xBE (enable).
+/* Auto-Configuration Step 9 Auto-configuration enable register is set by the BMC to 0xBE (enable).
  * STEPS 1-8 MUST BE PERFORMED PRIOR TO EXECUTING STEP 9.
  * arg: bus_name (i2c bus name for BP)
  * arg: which_bp (BP connector offset)
