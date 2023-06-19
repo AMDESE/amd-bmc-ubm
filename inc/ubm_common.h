@@ -62,75 +62,75 @@
 
 // Add form Lenovo
 //BP PSoC count
-#define BP_TOTAL_SEP_0                                              0
-#define BP_TOTAL_SEP_1                                              1
-#define BP_TOTAL_SEP_2                                              2
-#define BP_TOTAL_SEP_3                                              3
+#define BP_TOTAL_SEP_0                                              (0)
+#define BP_TOTAL_SEP_1                                              (1)
+#define BP_TOTAL_SEP_2                                              (2)
+#define BP_TOTAL_SEP_3                                              (3)
 
 //BP BAY count
-#define BP_TOTAL_BAY_2                                              2
-#define BP_TOTAL_BAY_4                                              4
-#define BP_TOTAL_BAY_6                                              6
-#define BP_TOTAL_BAY_8                                              8
-#define BP_TOTAL_BAY_10                                             10
-#define BP_TOTAL_BAY_12                                             12
+#define BP_TOTAL_BAY_2                                              (2)
+#define BP_TOTAL_BAY_4                                              (4)
+#define BP_TOTAL_BAY_6                                              (6)
+#define BP_TOTAL_BAY_8                                              (8)
+#define BP_TOTAL_BAY_10                                             (10)
+#define BP_TOTAL_BAY_12                                             (12)
 
 //BP group ID
-#define BP_Group_ID_4                                               4
-#define BP_Group_ID_8                                               8
+#define BP_Group_ID_4                                               (4)
+#define BP_Group_ID_8                                               (8)
 
 //BP type ID
-#define BP_TYPE_SAS_SATA                                            0x01
-#define BP_TYPE_ANYBAY                                              0x02
-#define BP_TYPE_NVME                                                0x03
-#define BP_TYPE_EDSFF                                               0x04
-#define BP_TOTAL_CONNECTOR                                          8
+#define BP_TYPE_SAS_SATA                                            (0x01)
+#define BP_TYPE_ANYBAY                                              (0x02)
+#define BP_TYPE_NVME                                                (0x03)
+#define BP_TYPE_EDSFF                                               (0x04)
+#define BP_TOTAL_CONNECTOR                                          (8)
 
 //BP unique ID
-#define BP_ID_NONE                                                  0xC0
-#define BP_ID_2U_2_5_Anybay_8_Bay                                   0xC1
-#define BP_ID_2U_U3_Anybay_8_Bay                                    0xD1
+#define BP_ID_NONE                                                  (0xC0)
+#define BP_ID_2U_2_5_Anybay_8_Bay                                   (0xC1)
+#define BP_ID_2U_U3_Anybay_8_Bay                                    (0xD1)
 
 
 //BP auto configuration offset
-#define BP_CONTROL_REGISTER_GROUP_ID                                0x0D
-#define BP_CONTROL_REGISTER_SLOT_ID                                 0x12
-#define BP_CONTROL_REGISTER_BAY_ID                                  0x13
-#define BP_CONTROL_REGISTER_VMD_CONFIGURATION                       0x15
-#define BP_CONTROL_REGISTER_BACKPLANE_INFO                          0x16
-#define BP_CONTROL_REGISTER_NUM_OF_SLOTS                            0x17
-#define BP_CONTROL_REGISTER_START_SLOT_NUM                          0x18
-#define BP_CONTROL_REGISTER_START_HFC_IDENTITY                      0x19
-#define BP_CONTROL_REGISTER_SYSTEM_MGMT_PROTOCOL                    0x1A
-#define BP_CONTROL_REGISTER_AUTO_CONFIG_ENABLE                      0x0E
-#define BP_CONTROL_REGISTER_YELLOW_LED_SLOT_0_1                     0x22
-#define BP_CONTROL_REGISTER_PGOOD                                   0x46
+#define BP_CONTROL_REGISTER_GROUP_ID                                (0x0D)
+#define BP_CONTROL_REGISTER_SLOT_ID                                 (0x12)
+#define BP_CONTROL_REGISTER_BAY_ID                                  (0x13)
+#define BP_CONTROL_REGISTER_VMD_CONFIGURATION                       (0x15)
+#define BP_CONTROL_REGISTER_BACKPLANE_INFO                          (0x16)
+#define BP_CONTROL_REGISTER_NUM_OF_SLOTS                            (0x17)
+#define BP_CONTROL_REGISTER_START_SLOT_NUM                          (0x18)
+#define BP_CONTROL_REGISTER_START_HFC_IDENTITY                      (0x19)
+#define BP_CONTROL_REGISTER_SYSTEM_MGMT_PROTOCOL                    (0x1A)
+#define BP_CONTROL_REGISTER_AUTO_CONFIG_ENABLE                      (0x0E)
+#define BP_CONTROL_REGISTER_YELLOW_LED_SLOT_0_1                     (0x22)
+#define BP_CONTROL_REGISTER_PGOOD                                   (0x46)
 
 //BP PSoC relative reg
-#define BP_SLAVE_ADDR_SEP_NVME_MUX                                  0x73            /* 8-bit address: 0xE6 */
-#define BP_SLAVE_ADDR_SEP_STATUS_REG                                0x20            /* 8-bit address: 0x40 */
-#define BP_SLAVE_ADDR_SEP_CONTROL_REG                               0x60            /* 8-bit address: 0xC0 */
+#define BP_SLAVE_ADDR_SEP_NVME_MUX                                  (0x73)            /* 8-bit address: 0xE6 */
+#define BP_SLAVE_ADDR_SEP_STATUS_REG                                (0x20)            /* 8-bit address: 0x40 */
+#define BP_SLAVE_ADDR_SEP_CONTROL_REG                               (0x60)            /* 8-bit address: 0xC0 */
 
 //BP FRU
-#define SYS_EEPROM_PATH_LENGTH                                      64
-#define BP_FRU_BOARD_PRODUCT_OFFSET                                 0x16
-#define BP_FRU_BOARD_PRODUCT_SIZE                                   40
+#define SYS_EEPROM_PATH_LENGTH                                      (64)
+#define BP_FRU_BOARD_PRODUCT_OFFSET                                 (0x16)
+#define BP_FRU_BOARD_PRODUCT_SIZE                                   (40)
 
 
-#define BP_SYSTEM_TYPE_INTEL_GP                                     0x00
-#define BP_SYSTEM_TYPE_AMD_GP                                       0x20
-#define BP_SYSTEM_TYPE_INTEL_HS                                     0x40
-#define BP_SYSTEM_TYPE_AMD_HS                                       0x60
+#define BP_SYSTEM_TYPE_INTEL_GP                                     (0x00)
+#define BP_SYSTEM_TYPE_AMD_GP                                       (0x20)
+#define BP_SYSTEM_TYPE_INTEL_HS                                     (0x40)
+#define BP_SYSTEM_TYPE_AMD_HS                                       (0x60)
 
-#define BP_MANAGEMENT_PROTOCOL_SGPIO_I2CHP                          0x03
-#define BP_MANAGEMENT_PROTOCOL_I2CHP_UBM                            0x06
-#define BP_MANAGEMENT_PROTOCOL_SGPIO_I2CHP_UBM                      0x07
+#define BP_MANAGEMENT_PROTOCOL_SGPIO_I2CHP                          (0x03)
+#define BP_MANAGEMENT_PROTOCOL_I2CHP_UBM                            (0x06)
+#define BP_MANAGEMENT_PROTOCOL_SGPIO_I2CHP_UBM                      (0x07)
 
 
-#define PREFIX_BPBUS "/dev/i2c-2%d"
-#define BP1_FRU_PATH "/sys/bus/i2c/devices/250-0050/eeprom"
-#define BP2_FRU_PATH "/sys/bus/i2c/devices/251-0050/eeprom"
-#define BP3_FRU_PATH "/sys/bus/i2c/devices/252-0050/eeprom"
+#define PREFIX_BPBUS ("/dev/i2c-2%d")
+#define BP1_FRU_PATH ("/sys/bus/i2c/devices/250-0050/eeprom")
+#define BP2_FRU_PATH ("/sys/bus/i2c/devices/251-0050/eeprom")
+#define BP3_FRU_PATH ("/sys/bus/i2c/devices/252-0050/eeprom")
 
 
 
