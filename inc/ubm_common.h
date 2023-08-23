@@ -89,6 +89,7 @@
 //BP unique ID
 #define BP_ID_NONE                                                  (0xC0)
 #define BP_ID_2U_2_5_Anybay_8_Bay                                   (0xC1)
+#define BP_ID_2U_E3S_Anybay_4_Bay                                   (0xC2)
 #define BP_ID_2U_U3_Anybay_8_Bay                                    (0xD1)
 
 
@@ -132,6 +133,13 @@
 #define BP2_FRU_PATH ("/sys/bus/i2c/devices/251-0050/eeprom")
 #define BP3_FRU_PATH ("/sys/bus/i2c/devices/252-0050/eeprom")
 
+#define E3S1_FRU_PATH ("/sys/class/i2c-dev/i2c-255/device/255-0054/eeprom")
+#define E3S2_FRU_PATH ("/sys/class/i2c-dev/i2c-256/device/256-0054/eeprom")
+#define E3S3_FRU_PATH ("/sys/class/i2c-dev/i2c-261/device/261-0054/eeprom")
+#define E3S4_FRU_PATH ("/sys/class/i2c-dev/i2c-262/device/262-0054/eeprom")
+#define E3S5_FRU_PATH ("/sys/class/i2c-dev/i2c-263/device/263-0054/eeprom")
+#define E3S6_FRU_PATH ("/sys/class/i2c-dev/i2c-264/device/264-0054/eeprom")
+
 
 
 typedef struct
@@ -143,6 +151,7 @@ typedef struct
     uint8_t BP_Type;
     uint8_t BP_Group_ID;
     uint8_t BP_HFC[2];
+    uint8_t BP_UBM;
 } BP_Info;
 
 typedef struct
