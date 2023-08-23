@@ -32,6 +32,9 @@ extern "C"
 #define BP_CONF_FILE          ("/var/lib/misc/ubm.conf")
 #define BP_CONF_END           (0xFF)
 
+#define PDB_EEPROM    ("/sys/class/i2c-dev/i2c-250/device/250-0053/eeprom")
+
+
 //Lenovo Platforms
 constexpr auto PURICO    = 106;  //0x6A
 constexpr auto PURICO_1  = 114;  //0x72
@@ -47,10 +50,11 @@ static int bp_reg_data[CTL_MAX_REG];
 
 const BP_Info BP_Table_List[] =
 {
-        /* BP Name in FRU,                  BP ID (BP Type Code),           BP Total SEP,       BP Total Bay        BP Type,                BP Group ID         HFC */
-        {"None",                            BP_ID_NONE,                     BP_TOTAL_SEP_0,     BP_TOTAL_BAY_8,     BP_TYPE_ANYBAY,         BP_Group_ID_4,      {0, 0}        },
-        {"2U 2.5\" Anybay 8-Bay BP",        BP_ID_2U_2_5_Anybay_8_Bay,      BP_TOTAL_SEP_2,     BP_TOTAL_BAY_8,     BP_TYPE_ANYBAY,         BP_Group_ID_4,      {0, 5}        },
-        {"2U Volcano U.3 8-Bay BP",         BP_ID_2U_U3_Anybay_8_Bay,       BP_TOTAL_SEP_1,     BP_TOTAL_BAY_8,     BP_TYPE_NVME,           BP_Group_ID_4,      {0, 5}        },
+        /* BP Name in FRU,                  BP ID (BP Type Code),           BP Total SEP,       BP Total Bay        BP Type,                BP Group ID         HFC       UBM   */
+        {"None",                            BP_ID_NONE,                     BP_TOTAL_SEP_0,     BP_TOTAL_BAY_8,     BP_TYPE_ANYBAY,         BP_Group_ID_4,      {0, 0},   0     },
+        {"2U 2.5\" Anybay 8-Bay BP",        BP_ID_2U_2_5_Anybay_8_Bay,      BP_TOTAL_SEP_2,     BP_TOTAL_BAY_8,     BP_TYPE_ANYBAY,         BP_Group_ID_4,      {0, 5},   7     },
+        {"2U Volcano U.3 8-Bay BP",         BP_ID_2U_U3_Anybay_8_Bay,       BP_TOTAL_SEP_1,     BP_TOTAL_BAY_8,     BP_TYPE_NVME,           BP_Group_ID_4,      {0, 5},   7     },
+        {"2U Volcano E3.S 4-Bay BP",        BP_ID_2U_E3S_Anybay_4_Bay,      BP_TOTAL_SEP_1,     BP_TOTAL_BAY_4,     BP_TYPE_NVME,           BP_Group_ID_4,      {0, 5},   4     },
 };
 const int BP_Table_List_Count = (sizeof(BP_Table_List) / sizeof(BP_Table_List[0]));
 
@@ -391,7 +395,7 @@ int Check_BP_Starting_Host_Facing_Connector_Identity(char* bus_name, uint8_t whi
 int Check_BP_System_Type_Managment_Protocol_Support(char* bus_name, uint8_t which_bp, uint8_t which_sep)
 {
     uint8_t offset = BP_CONTROL_REGISTER_SYSTEM_MGMT_PROTOCOL;
-    uint8_t value  = (BP_MANAGEMENT_PROTOCOL_SGPIO_I2CHP_UBM);
+    uint8_t value  = (BP_Present_List[which_bp].BP_UBM);
     int ret      = FAILURE;
 
     ret = Check_BP_Auto_Configuration_Register(bus_name, which_bp, which_sep, offset, value);
@@ -525,6 +529,35 @@ int BP_SEP_Init_Handler(uint8_t which_bp)
     return SUCCESS;
 }
 
+/* E3.s BP tasks that require access to BP SEP (pSoC) before accessing BP register should be added in this function.
+ * arg: which_bp (BP connector offset)
+ */
+
+int B3S_SEP_Init_Handler(uint8_t which_bp)
+{
+    char bus_name[16] = "";
+    int  i           = 0;
+    int  ret         = FAILURE;
+    int  E3SBusNum[]={55,56,61,62,63,64};
+
+
+    if (BP_Present_List[which_bp].BP_Total_SEP == 0)
+        return ret;
+
+    snprintf(bus_name, sizeof(bus_name),PREFIX_BPBUS, E3SBusNum[which_bp] );
+
+    ret = BP_Auto_Configuration_Handler(bus_name, which_bp, i);
+    if (SUCCESS != ret)
+    {
+        sd_journal_print(LOG_ERR,"[%s][%d] Failed Auto-Config on BP [%d] with return code [0x%x]!\n", __FUNCTION__, __LINE__, which_bp, ret);
+        return ret;
+    }
+
+    return SUCCESS;
+}
+
+
+
 /* Check BP FRU info against BP_Table_List's BP_Name field.
  * arg: which_bp (BP connector offset)
  * arg: which_fru path (corresponding BP FRU path)
@@ -566,6 +599,45 @@ int Check_BP_FRU_Info(uint8_t which_bp, const char *fru_path)
     return FAILURE;
 }
 
+/* Check PDB FRU info against BP_Table_List's BP_Name field.
+ * arg: which_bp (BP connector offset)
+ * arg: which_fru path (corresponding BP FRU path)
+ */
+int Check_PDB_FRU_Info(const char *fru_path)
+{
+
+    FILE *fp = NULL;
+    int       nRet;
+    char  bp_fru_info[BP_FRU_BOARD_PRODUCT_SIZE] = "";
+
+    if ((fp = fopen (fru_path, "r")) == NULL)
+    {
+        sd_journal_print(LOG_ERR,"fopen %s fail!!\n",fru_path);
+        return FAILURE;
+    }
+
+    nRet = fseek( fp, BP_FRU_BOARD_PRODUCT_OFFSET, SEEK_SET );
+    if (nRet != 0)
+    {
+        fclose( fp );
+        sd_journal_print(LOG_ERR,"fseek %s fail!!\n",fru_path);
+        return FAILURE;
+    }
+    fread( bp_fru_info, 1, BP_FRU_BOARD_PRODUCT_SIZE, fp );
+    fclose(fp);
+
+    if(BP_DEBUG) sd_journal_print(LOG_INFO,"%s:%d  %s\n",__FUNCTION__, __LINE__, bp_fru_info);
+
+    if (NULL != strstr(bp_fru_info, "Volcano E3.S PDB"))
+    {
+        sd_journal_print(LOG_INFO,"Found E3.S PDB .\n");
+        return SUCCESS;
+    }
+
+    return FAILURE;
+}
+
+
 
 /* All BP tasks need to be done before monitoring BP status should be added in this function.
  * Tasks that require access to BP SEP should be added in BP_SEP_Init_Handler.
@@ -592,6 +664,32 @@ int BP_Init_Handler(uint8_t which_bp, const char *fru_path)
     return ret;
 }
 
+/* E3.s BP tasks need to be done before monitoring BP status should be added in this function.
+ * Tasks that require access to BP SEP should be added in BP_SEP_Init_Handler.
+ * arg: which_bp (BP connector offset)
+ * arg: which_fru path (corresponding BP FRU path)
+  */
+int E3S_Init_Handler(uint8_t which_bp, const char *fru_path)
+{
+    int ret = FAILURE;
+
+    if(which_bp >= BP_TOTAL_CONNECTOR)
+        return ret;
+
+    if (0 == BP_Present_List[which_bp].BP_Total_SEP)
+    {
+        ret = Check_BP_FRU_Info(which_bp, fru_path);
+        if (SUCCESS != ret)
+        {
+            return ret;
+        }
+    }
+
+    ret = B3S_SEP_Init_Handler(which_bp);
+    return ret;
+}
+
+
 /* BP auto configuration entry point.
  * Tasks that require access to BP SEP should be added in BP_SEP_Init_Handler.
  * arg: BP config count
@@ -609,6 +707,25 @@ void BP_auto_config(uint8_t BP_Config_List_Count, BP_Config *list)
         }
     }
 }
+
+/* E3.s auto configuration entry point.
+ * Tasks that require access to BP SEP should be added in BP_SEP_Init_Handler.
+ * arg: BP config count
+ * arg: BP config parameter
+ */
+void E3S_auto_config(uint8_t BP_Config_List_Count, BP_Config *list)
+{
+    for (int8_t i = 0; i < BP_Config_List_Count; i++)
+    {
+        if( access( list[i].BP_EEPROM , F_OK ) != -1 ) {
+            sd_journal_print(LOG_INFO,"%s check OK!!\n",list[i].BP_EEPROM);
+            E3S_Init_Handler(list[i].BP_Connector_Offset, list[i].BP_EEPROM);
+        } else {
+            sd_journal_print(LOG_INFO,"%s check Fail!!\n",list[i].BP_EEPROM);
+        }
+    }
+}
+
 
 
 int main(int argc, char **argv)
@@ -660,21 +777,50 @@ int main(int argc, char **argv)
         case VOLCANO_2:
         {
             sd_journal_print(LOG_INFO, "Lenovo Platform: Configure BP  \n");
-            uint8_t BP_Config_List_Count = 3;
             memset(BP_Present_List,      0, sizeof(BP_Present_List));
 
-            BP_Config_List[0].BP_Connector_Offset = 0;
-            BP_Config_List[0].BP_EEPROM = BP1_FRU_PATH;
-            BP_Config_List[0].Disk_Start_Index = 0xFF;
-            BP_Config_List[1].BP_Connector_Offset = 1;
-            BP_Config_List[1].BP_EEPROM = BP2_FRU_PATH;
-            BP_Config_List[1].Disk_Start_Index = 0xFF;
-            BP_Config_List[2].BP_Connector_Offset = 2;
-            BP_Config_List[2].BP_EEPROM = BP3_FRU_PATH;
-            BP_Config_List[2].Disk_Start_Index = 0xFF;
+           if( access( PDB_EEPROM , F_OK ) == 0 )
+           {
+                sd_journal_print(LOG_INFO,"PDB %s check OK!!\n",PDB_EEPROM);
+                if(Check_PDB_FRU_Info(PDB_EEPROM) == SUCCESS)                {
 
-            BP_auto_config(BP_Config_List_Count, BP_Config_List);
+                    uint8_t BP_Config_List_Count = 6;
+                    BP_Config_List[0].BP_Connector_Offset = 0;
+                    BP_Config_List[0].BP_EEPROM = E3S1_FRU_PATH;
+                    BP_Config_List[0].Disk_Start_Index = 0xFF;
+                    BP_Config_List[1].BP_Connector_Offset = 1;
+                    BP_Config_List[1].BP_EEPROM = E3S2_FRU_PATH;
+                    BP_Config_List[1].Disk_Start_Index = 0xFF;
+                    BP_Config_List[2].BP_Connector_Offset = 2;
+                    BP_Config_List[2].BP_EEPROM = E3S3_FRU_PATH;
+                    BP_Config_List[2].Disk_Start_Index = 0xFF;
+                    BP_Config_List[3].BP_Connector_Offset = 3;
+                    BP_Config_List[3].BP_EEPROM = E3S4_FRU_PATH;
+                    BP_Config_List[3].Disk_Start_Index = 0xFF;
+                    BP_Config_List[4].BP_Connector_Offset = 4;
+                    BP_Config_List[4].BP_EEPROM = E3S5_FRU_PATH;
+                    BP_Config_List[4].Disk_Start_Index = 0xFF;
+                    BP_Config_List[5].BP_Connector_Offset = 5;
+                    BP_Config_List[5].BP_EEPROM = E3S6_FRU_PATH;
+                    BP_Config_List[5].Disk_Start_Index = 0xFF;
+                    E3S_auto_config(BP_Config_List_Count, BP_Config_List);
+                }
+           }
+            else
+           {
+                uint8_t BP_Config_List_Count = 3;
+                BP_Config_List[0].BP_Connector_Offset = 0;
+                BP_Config_List[0].BP_EEPROM = BP1_FRU_PATH;
+                BP_Config_List[0].Disk_Start_Index = 0xFF;
+                BP_Config_List[1].BP_Connector_Offset = 1;
+                BP_Config_List[1].BP_EEPROM = BP2_FRU_PATH;
+                BP_Config_List[1].Disk_Start_Index = 0xFF;
+                BP_Config_List[2].BP_Connector_Offset = 2;
+                BP_Config_List[2].BP_EEPROM = BP3_FRU_PATH;
+                BP_Config_List[2].Disk_Start_Index = 0xFF;
 
+                BP_auto_config(BP_Config_List_Count, BP_Config_List);
+           }
 #if 0
             if(bp_open_dev() == SUCCESS) {
                 reg_cnt = bp_read_conf();
