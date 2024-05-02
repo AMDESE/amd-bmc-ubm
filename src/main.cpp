@@ -42,6 +42,7 @@ constexpr auto PURICO_2  = 115;  //0x73
 constexpr auto VOLCANO   = 107;  //0x6B
 constexpr auto VOLCANO_1 = 116;  //0x74
 constexpr auto VOLCANO_2 = 117;  //0x75
+constexpr auto VOLCANO_3 = 127;  //0x7F
 
 static int fd = FAILURE;
 static int mux_port[4]={MUX_ENABLE_PORT0, MUX_ENABLE_PORT1, MUX_ENABLE_PORT2, MUX_ENABLE_PORT3};
@@ -775,6 +776,7 @@ int main(int argc, char **argv)
         case VOLCANO:
         case VOLCANO_1:
         case VOLCANO_2:
+        case VOLCANO_3:
         {
             sd_journal_print(LOG_INFO, "Lenovo Platform: Configure BP  \n");
             memset(BP_Present_List,      0, sizeof(BP_Present_List));
